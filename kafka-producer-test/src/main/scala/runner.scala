@@ -1,6 +1,6 @@
 import java.nio.channels.AsynchronousChannelGroup
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{Concurrent, ExitCode, IO, IOApp}
 import fs2.Stream
 import oep.kafka.{clientFactory, producer}
 import scodec.bits.ByteVector
@@ -23,7 +23,7 @@ object runner extends IOApp {
       .flatMap { implicit provider =>
         Stream.resource(Log.async[IO])
           .flatMap { implicit log =>
-            clientFactory[IO].create("local",9092,"my-client")
+            clientFactory[IO].create("127.0.0.1",9092,"my-client")
               .flatMap { client =>
                 Stream.eval(producer[IO](client, "test-topic", 0)
                     .write(ByteVector.encodeUtf8(key).toOption.get, ByteVector.encodeUtf8(message).toOption.get)
