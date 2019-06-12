@@ -30,7 +30,7 @@ class fileOffsetStore[F[_]](fileName : String)(implicit F : Effect[F], L : Log[F
   override def read(topic: String, partitionId: Int): F[Option[Long @@ kafka.Offset]] = {
     val source = Source.fromFile(fileName)
     F.attempt {
-      F.delay(offset(source.getLines().mkString.asInstanceOf[Long]))
+      F.delay(offset(source.getLines().mkString.toLong))
     }.flatMap{
 
       case Right(off) => F.attempt(F.delay(source.close())).map(_ => Some(offset(off)))

@@ -5,7 +5,7 @@ import cats.effect.{Concurrent, Effect, Timer}
 import fs2.Stream
 import scodec.bits.ByteVector
 import shapeless.tag.@@
-import spinoco.fs2.kafka.KafkaClient
+import spinoco.fs2.kafka.{KafkaClient, offset}
 import spinoco.fs2.log.Log
 import spinoco.protocol.kafka.{Offset, PartitionId, TopicName}
 
@@ -29,9 +29,11 @@ class consumer[F[_] : Timer](client: KafkaClient[F],
       optOff <- Stream.eval(offsetStore.read(topicName, partitionId))
       o <- optOff match {
         //if the offset can't be retrieved from the offset store start at the beginning
-        case Some(o) => Stream.eval(C.pure(o))
-        case None => Stream.eval(client.offsetRangeFor(topicName, partitionId)).map(_._1)
+        case Some(o) => Stream.eval(C.pure(offset(o + 1)))
+        case None => Stream.eval(log.info(s"No offset found, retrieving from broker.."))
+          .flatMap(_ => Stream.eval(client.offsetRangeFor(topicName, partitionId)).map(_._1))
       }
+      _ <- Stream.eval(log.info(s"Starting consumer at offset $o"))
       tm <- client.subscribe(topicName, partitionId, o)
       _ <- f(tm.key, tm.message)
       _ <- Stream.eval(offsetCache.set(tm.offset))
