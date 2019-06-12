@@ -5,6 +5,7 @@ import fs2.Stream
 import oep.kafka.eventProcessingClient
 import oep.kafka.offsetStoreImpl.fileOffsetStore
 import scodec.bits.ByteVector
+import spinoco.fs2.kafka.{partition, topic}
 import spinoco.fs2.log._
 
 object runner extends IOApp {
@@ -13,7 +14,6 @@ object runner extends IOApp {
 
   val ex: ExecutorService = Executors.newCachedThreadPool()
   implicit def AG: AsynchronousChannelGroup = AsynchronousChannelGroup.withThreadPool(ex)
-  //implicit val timer = IO.timer(scala.concurrent.ExecutionContext.Implicits.global)
 
   override def run(args: List[String]): IO[ExitCode] = {
 
@@ -24,7 +24,7 @@ object runner extends IOApp {
               val o = new fileOffsetStore[IO]("/Users/GregC/Development/OEP-Scala/oep-kafka-client/offset.txt")
               val op = (key : ByteVector, data : ByteVector) => Stream.eval(IO.delay(System.out.println(s"${key.decodeUtf8.toOption.get} : ${data.decodeUtf8.toOption.get}")))
               val e = eventProcessingClient("127.0.0.1",9092,"my-client", o, op)
-              e.start("test-topic", 0)
+              e.start(topic("test-topic"), partition(0))
           }}.compile.drain.map(_ => ExitCode.Success)
   }
 }
