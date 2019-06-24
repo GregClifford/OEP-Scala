@@ -32,7 +32,6 @@ object KafkaTools {
           .flatMap { implicit log =>
             ClientFactory[IO].create(host,port,"my-client")
               .flatMap { client =>
-
                 Stream.emits(messages.toList)
                     .flatMap{ message =>
                       Stream.eval(client.publish1(topic(topicName),

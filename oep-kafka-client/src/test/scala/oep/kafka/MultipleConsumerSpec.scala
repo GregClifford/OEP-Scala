@@ -14,6 +14,7 @@ import spinoco.protocol.kafka.{PartitionId, TopicName}
 import Implicits._
 import scala.concurrent.duration._
 import scala.collection.mutable.{Map => MMap}
+import retry.CatsEffect.sleepUsingTimer
 
 class MultipleConsumerSpec extends Specification with BeforeAfterAll {
   sequential

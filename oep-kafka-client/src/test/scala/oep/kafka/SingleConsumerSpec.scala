@@ -10,7 +10,7 @@ import org.specs2.specification.BeforeAfterAll
 import scodec.bits.ByteVector
 import spinoco.fs2.kafka.{partition, topic}
 import spinoco.fs2.log.{Log, StandardProviders}
-
+import retry.CatsEffect.sleepUsingTimer
 import scala.collection.mutable.{Map => MMap}
 import scala.concurrent.duration._
 

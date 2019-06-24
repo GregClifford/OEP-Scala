@@ -7,6 +7,7 @@ import oep.kafka.offsetStoreImpl.FileOffsetStore
 import scodec.bits.ByteVector
 import spinoco.fs2.kafka.{partition, topic}
 import spinoco.fs2.log._
+import retry.CatsEffect.sleepUsingTimer
 
 object Runner extends IOApp {
 
@@ -24,7 +25,8 @@ object Runner extends IOApp {
               val o = new FileOffsetStore[IO](s"${new java.io.File(".").getCanonicalPath}")
               val op = (key : ByteVector, data : ByteVector) => Stream.eval(IO.delay(System.out.println(s"${key.decodeUtf8.toOption.get} : ${data.decodeUtf8.toOption.get}")))
               val e = EventProcessingClient("127.0.0.1",9092,"my-client", o)
-              e.startN(List((topic("test-topic2"), partition(0), op), (topic("test-topic2"), partition(1), op)))
+              //e.startN(List((topic("test-topic2"), partition(0), op), (topic("test-topic2"), partition(1), op)))
+              e.start(topic("test-topic-restart"), partition(0), op)
           }}.compile.drain.map(_ => ExitCode.Success)
   }
 }
