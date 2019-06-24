@@ -13,17 +13,16 @@ import spinoco.protocol.kafka.{Offset, PartitionId, TopicName}
 
 import scala.concurrent.duration._
 
-class eventProcessingClient[F[_] : Concurrent : Timer : ContextShift : ConcurrentEffect]
+class EventProcessingClient[F[_] : Concurrent : Timer : ContextShift : ConcurrentEffect]
 (host: String,
  port: Int,
  clientName: String,
- offsetStore: offsetStore[F],
- op : (ByteVector, ByteVector) => Stream[F, Unit])
+ offsetStore: OffsetStore[F])
 (implicit F: Effect[F], AG: AsynchronousChannelGroup, L : Log[F]) {
 
   private def createClient : Stream[F, KafkaClient[F]] = {
     Stream.eval(F.delay(L.info(s"Creating Kafka client for $host:$port")))
-      .flatMap { _ => clientFactory[F].create(host, port, clientName)}
+      .flatMap { _ => ClientFactory[F].create(host, port, clientName)}
   }
 
   private def createOffsetCache : Stream[F, Ref[F, Long @@ Offset]] = Stream.eval(Ref.of[F, Long @@ Offset](offset(-1)))
@@ -31,40 +30,40 @@ class eventProcessingClient[F[_] : Concurrent : Timer : ContextShift : Concurren
   private def createConsumer(client : KafkaClient[F],
                              offsetCache : Ref[F, Long @@ Offset],
                              topicName : String @@ TopicName,
-                             partitionId : Int @@ PartitionId ): Stream[F, Unit] = {
+                             partitionId : Int @@ PartitionId,
+                             op : (ByteVector, ByteVector) => Stream[F, Unit]): Stream[F, Unit] = {
     for {
       _ <- Stream.eval(L.info(s"Consuming from topic:$topicName partition: $partitionId"))
-      c = consumer[F](client, offsetStore, offsetCache, topicName, partitionId).consume(op)
+      c = Consumer[F](client, offsetStore, offsetCache, topicName, partitionId).consume(op)
       s <- Stream.retry(c.compile.drain, 1.seconds, _ => 1.seconds, 1)
     } yield s
   }
 
 
-  def start(topicName : String @@ TopicName, partitionId : Int @@ PartitionId): Stream[F, Unit] = {
+  def start(topicName : String @@ TopicName, partitionId : Int @@ PartitionId, op : (ByteVector, ByteVector) => Stream[F, Unit]): Stream[F, Unit] = {
     for {
       client <- createClient
       offsetCache <- createOffsetCache
-      _ <- createConsumer(client, offsetCache, topicName, partitionId).covary
+      _ <- createConsumer(client, offsetCache, topicName, partitionId, op).covary
     } yield ()
   }
 
-  def startN(config : List[(String @@ TopicName, Int @@ PartitionId)]) : Stream[F, Unit] = {
+  def startN(config : List[(String @@ TopicName, Int @@ PartitionId, (ByteVector, ByteVector) => Stream[F, Unit])]) : Stream[F, Unit] = {
     for {
       client <- createClient
-      streams = Stream.emits(config).map{tp =>
-        createOffsetCache.flatMap(offsetCache => createConsumer(client, offsetCache, tp._1, tp._2))}.covary[F]
+      streams = Stream.emits(config).map{c =>
+        createOffsetCache.flatMap(offsetCache => createConsumer(client, offsetCache, c._1, c._2, c._3))}.covary[F]
       _ <- streams.parJoinUnbounded
     } yield ()
   }
 }
 
-object eventProcessingClient{
+object EventProcessingClient{
 
   def apply[F[_] : Concurrent : Timer : ContextShift : ConcurrentEffect](host: String,
             port: Int,
             clientName: String,
-            offsetStore: offsetStore[F],
-            op: (ByteVector, ByteVector) => Stream[F, Unit])
-           (implicit F: Effect[F], AG: AsynchronousChannelGroup, L : Log[F]) : eventProcessingClient[F] = new eventProcessingClient(host, port, clientName, offsetStore, op)
+            offsetStore: OffsetStore[F])
+           (implicit F: Effect[F], AG: AsynchronousChannelGroup, L : Log[F]) : EventProcessingClient[F] = new EventProcessingClient(host, port, clientName, offsetStore)
 
 }

@@ -3,7 +3,7 @@ package oep.kafka.offsetStoreImpl
 import java.io._
 import cats.effect.Effect
 import cats.implicits._
-import oep.kafka.offsetStore
+import oep.kafka.OffsetStore
 import shapeless.tag.@@
 import spinoco.fs2.kafka.offset
 import spinoco.fs2.log.Log
@@ -11,7 +11,7 @@ import spinoco.protocol.kafka
 
 import scala.io.Source
 
-class fileOffsetStore[F[_]](dir : String)(implicit F : Effect[F], L : Log[F] ) extends offsetStore[F] {
+class FileOffsetStore[F[_]](dir : String)(implicit F : Effect[F], L : Log[F] ) extends OffsetStore[F] {
 
   private def getFilename(topic: String, partitionId: Int): String  = s"$dir/$topic-$partitionId.txt"
 

@@ -11,8 +11,8 @@ import spinoco.protocol.kafka.{Offset, PartitionId, TopicName}
 
 import scala.concurrent.duration._
 
-class consumer[F[_] : Timer](client: KafkaClient[F],
-                             offsetStore: offsetStore[F],
+class Consumer[F[_] : Timer](client: KafkaClient[F],
+                             offsetStore: OffsetStore[F],
                              offsetCache: Ref[F, Long @@ Offset],
                              topicName: String @@ TopicName,
                              partitionId: Int @@ PartitionId)(implicit log: Log[F], C: Concurrent[F]) {
@@ -47,9 +47,9 @@ class consumer[F[_] : Timer](client: KafkaClient[F],
   }
 }
 
-object consumer {
+object Consumer {
 
-  def apply[F[_] : Effect : Timer : Concurrent](client: KafkaClient[F], offsetStore: offsetStore[F], offsetCache: Ref[F, Long @@ Offset], topicName: String @@ TopicName, partitionId: Int @@ PartitionId)(implicit log: Log[F]): consumer[F] =
-    new consumer(client, offsetStore, offsetCache, topicName, partitionId)
+  def apply[F[_] : Effect : Timer : Concurrent](client: KafkaClient[F], offsetStore: OffsetStore[F], offsetCache: Ref[F, Long @@ Offset], topicName: String @@ TopicName, partitionId: Int @@ PartitionId)(implicit log: Log[F]): Consumer[F] =
+    new Consumer(client, offsetStore, offsetCache, topicName, partitionId)
 
 }

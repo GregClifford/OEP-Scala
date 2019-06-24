@@ -4,18 +4,18 @@ import java.time.LocalDateTime
 
 import cats.effect.IO
 import fs2.Stream
-import oep.kafka.offsetStoreImpl.fileOffsetStore
+import oep.kafka.Implicits._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 import scodec.bits.ByteVector
 import spinoco.fs2.kafka.{partition, topic}
 import spinoco.fs2.log.{Log, StandardProviders}
-import Implicits._
+
 import scala.collection.mutable.{Map => MMap}
 import scala.concurrent.duration._
 
-class singleConsumerSpec extends Specification with BeforeAfterAll {
-  //sequential
+class SingleConsumerSpec extends Specification with BeforeAfterAll {
+  sequential
 
   val topicName = s"test-topic-${LocalDateTime.now().toString.replace(":", "")}"
   val host = "127.0.0.1"
@@ -24,27 +24,28 @@ class singleConsumerSpec extends Specification with BeforeAfterAll {
 
   override def beforeAll(): Unit = {
     val program = for {
-      _ <- kafkaTools.createTopic(topicName)
-      _ <- kafkaTools.publish(host, port, topicName, 0, messages)
+      _ <- KafkaTools.createTopic(topicName)
+      _ <- KafkaTools.publish(host, port, topicName, 0, messages)
     } yield ()
     program.unsafeRunSync()
     ()
   }
 
   override def afterAll(): Unit = {
-    /*for {
+    /*val program = for {
       _ <- kafkaTools.clearTopic(topicName)
       _ <- kafkaTools.deleteTopic(topicName)
-    } yield ()*/
+    } yield ()
+    program.unsafeRunSync()*/
     ()
   }
 
-  def retrieve(op: (ByteVector, ByteVector) => Stream[IO, Unit], offsetStore: offsetStore[IO]) = Stream.resource(StandardProviders.juliProvider[IO])
+  private def retrieve(op: (ByteVector, ByteVector) => Stream[IO, Unit], offsetStore: OffsetStore[IO]): IO[Unit] = Stream.resource(StandardProviders.juliProvider[IO])
     .flatMap { implicit provider =>
       Stream.resource(Log.async[IO])
         .flatMap { implicit log =>
-          val e = eventProcessingClient(host, port, "my-client", offsetStore, op)
-          e.start(topic(topicName), partition(0))
+          val e = EventProcessingClient(host, port, "my-client", offsetStore)
+          e.start(topic(topicName), partition(0), op)
         }
     }.interruptAfter(5.seconds).compile.drain
 
@@ -79,7 +80,7 @@ class singleConsumerSpec extends Specification with BeforeAfterAll {
         //get initial messages and shutdown
         _ <- retrieve((_, _) => Stream.eval(IO.unit), offsetStore)
         //publish some more
-        _ <- kafkaTools.publish(host, port, topicName, 0, secondMessageGroup)
+        _ <- KafkaTools.publish(host, port, topicName, 0, secondMessageGroup)
         //retrieve from stored offset
         _ <- retrieve(op, offsetStore)
       } yield ()

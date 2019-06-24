@@ -7,7 +7,7 @@ import spinoco.protocol.kafka
 
 import scala.collection.mutable
 
-class InMemoryOffsetStore extends offsetStore[IO]{
+class InMemoryOffsetStore extends OffsetStore[IO]{
 
   private val store = mutable.Map.empty[String, Long]
 

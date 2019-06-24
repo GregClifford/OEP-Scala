@@ -9,7 +9,7 @@ import spinoco.protocol.kafka._
 import fs2.Stream
 import spinoco.fs2.log.Log
 
-class clientFactory[F[_]](implicit F: ConcurrentEffect[F], L : Log[F], T : Timer[F], CS : ContextShift[F], AG : AsynchronousChannelGroup) {
+class ClientFactory[F[_]](implicit F: ConcurrentEffect[F], L : Log[F], T : Timer[F], CS : ContextShift[F], AG : AsynchronousChannelGroup) {
 
   def create(brokerName : String, port : Int, clientName : String): Stream[F, KafkaClient[F]] = kafka.client[F](
     ensemble = Set(broker(brokerName, port))
@@ -17,8 +17,8 @@ class clientFactory[F[_]](implicit F: ConcurrentEffect[F], L : Log[F], T : Timer
     , clientName = clientName)
 }
 
-object clientFactory  {
+object ClientFactory  {
 
-  def apply[F[_]](implicit F: ConcurrentEffect[F], L : Log[F], T : Timer[F], CS : ContextShift[F], AG : AsynchronousChannelGroup): clientFactory[F] =
-    new clientFactory[F]
+  def apply[F[_]](implicit F: ConcurrentEffect[F], L : Log[F], T : Timer[F], CS : ContextShift[F], AG : AsynchronousChannelGroup): ClientFactory[F] =
+    new ClientFactory[F]
 }

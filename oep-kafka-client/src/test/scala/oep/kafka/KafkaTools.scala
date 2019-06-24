@@ -10,7 +10,7 @@ import spinoco.fs2.log.{Log, StandardProviders}
 import scala.concurrent.duration._
 import scala.sys.process.{Process, ProcessLogger}
 
-object kafkaTools {
+object KafkaTools {
 
   private def createTopicCommand(topic: String) = s"kafka-topics --bootstrap-server localhost:9092 --create --topic $topic --partitions 1 --replication-factor 1"
 
@@ -30,7 +30,7 @@ object kafkaTools {
       .flatMap { implicit provider =>
         Stream.resource(Log.async[IO])
           .flatMap { implicit log =>
-            clientFactory[IO].create(host,port,"my-client")
+            ClientFactory[IO].create(host,port,"my-client")
               .flatMap { client =>
 
                 Stream.emits(messages.toList)
