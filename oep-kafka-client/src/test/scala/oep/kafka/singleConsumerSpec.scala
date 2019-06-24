@@ -84,7 +84,7 @@ class singleConsumerSpec extends Specification with BeforeAfterAll {
         _ <- retrieve(op, offsetStore)
       } yield ()
       program.unsafeRunSync()
-      retrievedMessages.size must ===(messages.size)
+      retrievedMessages.size must ===(secondMessageGroup.size)
       secondMessageGroup
         .toList
         .map(message => retrievedMessages.toList.contains(message))
