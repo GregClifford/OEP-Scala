@@ -26,7 +26,7 @@ class eventProcessingClient[F[_] : Concurrent : Timer : ContextShift : Concurren
       .flatMap { _ => clientFactory[F].create(host, port, clientName)}
   }
 
-  private def createOffsetCache : Stream[F, Ref[F, Long @@ Offset]] = Stream.eval(Ref.of[F, Long @@ Offset](offset(0)))
+  private def createOffsetCache : Stream[F, Ref[F, Long @@ Offset]] = Stream.eval(Ref.of[F, Long @@ Offset](offset(-1)))
 
   private def createConsumer(client : KafkaClient[F],
                              offsetCache : Ref[F, Long @@ Offset],
@@ -51,8 +51,8 @@ class eventProcessingClient[F[_] : Concurrent : Timer : ContextShift : Concurren
   def startN(config : List[(String @@ TopicName, Int @@ PartitionId)]) : Stream[F, Unit] = {
     for {
       client <- createClient
-      offsetCache <- createOffsetCache
-      streams = Stream.emits(config).map(tp => createConsumer(client, offsetCache, tp._1, tp._2)).covary[F]
+      streams = Stream.emits(config).map{tp =>
+        createOffsetCache.flatMap(offsetCache => createConsumer(client, offsetCache, tp._1, tp._2))}.covary[F]
       _ <- streams.parJoinUnbounded
     } yield ()
   }

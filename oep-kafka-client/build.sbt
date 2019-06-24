@@ -21,7 +21,7 @@ lazy val root = (project in file("."))
     name := "oep-kafka-client",
     scalacOptions ++= commonScalacOptions,
     libraryDependencies  ++= List(
-      scalaTest % Test,
+      "org.specs2" %% "specs2-core" % "4.3.4"  % Test,
       "com.spinoco" %% "fs2-kafka" % "0.4.0")
   )
 

@@ -33,7 +33,7 @@ class consumer[F[_] : Timer](client: KafkaClient[F],
         case None => Stream.eval(log.info(s"No offset found, retrieving from broker.."))
           .flatMap(_ => Stream.eval(client.offsetRangeFor(topicName, partitionId)).map(_._1))
       }
-      _ <- Stream.eval(log.info(s"Starting consumer at offset $o"))
+      _ <- Stream.eval(log.info(s"Starting consumer topic: $topicName partition: $partitionId at offset $o"))
       tm <- client.subscribe(topicName, partitionId, o)
       _ <- f(tm.key, tm.message)
       _ <- Stream.eval(offsetCache.set(tm.offset))

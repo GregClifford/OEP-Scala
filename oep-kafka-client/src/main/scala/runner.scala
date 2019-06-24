@@ -21,10 +21,10 @@ object runner extends IOApp {
       .flatMap { implicit provider =>
         Stream.resource(Log.async[IO])
           .flatMap { implicit log =>
-              val o = new fileOffsetStore[IO]("/Users/GregC/Development/OEP-Scala/oep-kafka-client/offset.txt")
+              val o = new fileOffsetStore[IO](s"${new java.io.File(".").getCanonicalPath}")
               val op = (key : ByteVector, data : ByteVector) => Stream.eval(IO.delay(System.out.println(s"${key.decodeUtf8.toOption.get} : ${data.decodeUtf8.toOption.get}")))
               val e = eventProcessingClient("127.0.0.1",9092,"my-client", o, op)
-              e.start(topic("test-topic"), partition(0))
+              e.startN(List((topic("test-topic2"), partition(0)), (topic("test-topic2"), partition(1))))
           }}.compile.drain.map(_ => ExitCode.Success)
   }
 }
