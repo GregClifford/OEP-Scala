@@ -16,4 +16,6 @@ object Implicits {
 
   implicit def CS: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
+  implicit val ec = scala.concurrent.ExecutionContext.global
+
 }
