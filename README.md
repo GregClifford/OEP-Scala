@@ -4,4 +4,4 @@ Library to implement a resilient online event processing client for Kafka in Sca
 
 ## Usage
 
-Implement an OffsetStore[F] and provide it to the EventProcessingClient together with Kafka configuration. The EventProcessingClient will provide a stream of commits from Kafka. In the event of a local failure the client will restart at the last processed offset, which may have been processed by another client.
+Implement an OffsetStore[F] and provide it to the EventProcessingClient together with Kafka configuration. The EventProcessingClient will provide a stream of commits from Kafka. In the event of a local failure the client will restart at the last processed offset, which may have been processed by alternative client which the local process failed over to/is load balance by.
